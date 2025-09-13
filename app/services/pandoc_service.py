@@ -1,8 +1,7 @@
 import pypandoc
 import os
 import app.services.aiservice as aiservice
-import base64
-import re
+
 
 def docx_to_html(file_path: str, media_dir: str = "media") -> str:
     """

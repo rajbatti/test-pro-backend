@@ -25,6 +25,8 @@ IMPORTANT RULES (must follow exactly):
 5. `correct_option` must be ONLY the option label (e.g., "a"), lowercase if options were labeled alphabetically.
 6. Output must be **valid JSON** only, with no surrounding text or commentary.
 7. Check json correctly before sending response .
+8. Don't leave any question give all.
+9. Remove question number from question.
 
 If you cannot find a correct option, set "correct_option" by solving yourself"".
 """

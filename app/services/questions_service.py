@@ -11,8 +11,6 @@ import re
 import tempfile
 router = APIRouter()
 
-
-
 def image_embedding(output):
     media_dir = "media"
     img_tags = re.findall(r'<img\s+[^>]*src="([^"]+)"', output)
@@ -48,10 +46,7 @@ def add_image_embbedings(q):
     q["options"] = l
     return q
 
-
-@router.post("/convert")
-async def convert_docx(file: UploadFile = File(...)):
-    """Upload DOCX, convert to HTML, extract questions, store in MongoDB"""
+async def get_questions_from_docx(file):
     print("request recieved")
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
@@ -69,47 +64,49 @@ async def convert_docx(file: UploadFile = File(...)):
             raise ValueError(f"Failed to parse JSON: {e}")
 
         inserted_ids = []
-        print(parsed_json)
-        for q in parsed_json:
-            q=add_image_embbedings(q)
-            result = await questions_collection.insert_one(q)
-            inserted_ids.append(str(result.inserted_id))
+        for q_data in parsed_json:
+            # Apply image embeddings
+            q_data_with_embeddings = add_image_embbedings(q_data)
 
-        return {"inserted_ids": inserted_ids}
+            result = await questions_collection.insert_one(q_data_with_embeddings)
+            inserted_ids.append(result.inserted_id)
+
+        return inserted_ids
 
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/questions")
-async def get_questions():
-    docs = questions_collection.find()
-    return [QuestionModel(**doc) async for doc in docs]
+# @router.get("/questions")
+# async def get_questions():
+#     docs = questions_collection.find()
+#     return [QuestionModel(**doc) async for doc in docs]
 
 
-@router.get("/questions/{id}")
-async def get_question(id: str):
-    doc = await questions_collection.find_one({"_id": ObjectId(id)})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Question not found")
-    return QuestionModel(**doc)
+# @router.get("/questions/{id}")
+# async def get_question(id: str):
+#     doc = await questions_collection.find_one({"_id": ObjectId(id)})
+#     if not doc:
+#         raise HTTPException(status_code=404, detail="Question not found")
+#     return QuestionModel(**doc)
 
 
-@router.put("/questions/{id}")
-async def update_question(id: str, body: QuestionUpdate):
-    update_data = {k: v for k, v in body.dict().items() if v is not None}
-    if not update_data:
-        raise HTTPException(status_code=400, detail="No fields to update")
+# @router.put("/questions/{id}")
+# async def update_question(id: str, body: QuestionUpdate):
+#     update_data = {k: v for k, v in body.dict().items() if v is not None}
+#     if not update_data:
+#         raise HTTPException(status_code=400, detail="No fields to update")
 
-    result = await questions_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Question not found")
-    return {"message": "Question updated"}
+#     result = await questions_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+#     if result.matched_count == 0:
+#         raise HTTPException(status_code=404, detail="Question not found")
+#     return {"message": "Question updated"}
 
 
-@router.delete("/questions/{id}")
-async def delete_question(id: str):
-    result = await questions_collection.delete_one({"_id": ObjectId(id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Question not found")
-    return {"message": "Question deleted"}
+# @router.delete("/questions/{id}")
+# async def delete_question(id: str):
+#     result = await questions_collection.delete_one({"_id": ObjectId(id)})
+#     if result.deleted_count == 0:
+#         raise HTTPException(status_code=404, detail="Question not found")
+#     return {"message": "Question deleted"}
